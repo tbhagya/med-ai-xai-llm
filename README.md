@@ -1,4 +1,4 @@
-# Medical XAI-LLM: Stroke Prediction with Explainable AI
+# AI-XAI-LLM: Stroke Prediction with Explainable AI
 
 A machine learning project that predicts stroke risk using Random Forest classification and provides interpretable explanations through SHAP values and LLM-generated natural language summaries.
 
