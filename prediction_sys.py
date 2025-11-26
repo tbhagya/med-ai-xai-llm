@@ -309,8 +309,6 @@ top_feature_list = ", ".join([
     for f in top3['feature'].tolist()
 ])
 
-print(f"\nThe input features that had the greatest impact on the stroke risk prediction were {top_feature_list}.\n")
-
 # Initialize LLM wrapper
 llm = LLMWrapper(
     base_url=LMSTUDIO_CONFIG['base_url'],
@@ -403,21 +401,25 @@ Smoking History: Never smoking avoids vascular toxins and inflammation.
 
 Overall Summary: Youth, normal blood pressure, and no smoking history contribute to low stroke risk.
 
-Now generate the stroke risk report for the following patient. IMPORTANT: Follow the exact structure shown in the examples above.
+Now generate the stroke risk report for the following patient. 
+
+CRITICAL: Your response MUST start with this exact sentence:
+"The input features that had the greatest impact on the stroke risk prediction were {top_feature_list}."
+
+Then, for EACH of the three features, write its name as a heading followed by 2-3 sentences explaining how it medically impacts this patient's stroke risk.
+
+
+Finally, end with "Overall Summary:" followed by one one sentence summarizing the combined effect of these features. 
+Do not include any advice or recommendations.
+
 
 Stroke Risk: {risk_label}
 
 Patient Data:
 {patient_feature_block}
 
-Explanation:
-The input features that had the greatest impact on the stroke risk prediction were {top_feature_list}.
+Begin your explanation now:
 
-For each feature, write its name followed by 2-3 sentences explaining how it medically impacts this patient's stroke risk.
-
-Overall Summary: Write one sentence summarizing the combined effect of these features.
-
-Do not include any advice or recommendations.
 """
 
 # --- Send to LM Studio (notebook-style call) ---
