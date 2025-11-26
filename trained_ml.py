@@ -190,7 +190,7 @@ print("="*60)
 # 3. REPRESENTATIVE SAMPLE SELECTION
 # ================================
 print("\n" + "="*60)
-print("REPRESENTATIVE SAMPLE SELECTION")
+print("REPRESENTATIVE SAMPLE SELECTION (STRATIFIED SAMPLING)")
 print("="*60)
 
 X = df.drop(columns=['id', 'stroke'])
@@ -204,61 +204,110 @@ y = df['stroke']
 df_original_scale = df.copy()
 df_original_scale[numeric_cols] = scaler.inverse_transform(df[numeric_cols])
 
-# Separate by class
-stroke_df = df_original_scale[df_original_scale['stroke'] == 1].reset_index(drop=True)
-no_stroke_df = df_original_scale[df_original_scale['stroke'] == 0].reset_index(drop=True)
+print(f"\nTotal dataset size: {len(df_original_scale)}")
+print(f"Stroke cases: {sum(df_original_scale['stroke'] == 1)}")
+print(f"Non-stroke cases: {sum(df_original_scale['stroke'] == 0)}")
 
-print(f"\nStroke cases: {len(stroke_df)}, Non-stroke cases: {len(no_stroke_df)}")
+# Step 1: Use stratified sampling to get initial sample
+# We need 15 samples total (5 stroke, 10 non-stroke)
+# Calculate sampling fraction to get approximately these numbers
+n_stroke_needed = 5
+n_no_stroke_needed = 10
+total_needed = n_stroke_needed + n_no_stroke_needed
 
-# Function to select diverse samples based on quantiles
-def select_diverse_samples(df_class, n_samples, top_features):
-    """Select diverse samples across feature space using quantile-based sampling"""
-    if len(df_class) < n_samples:
-        return df_class.sample(n=len(df_class), random_state=42)
-    
-    # Create quantile bins for numeric features
-    selected_indices = []
-    
-    # Strategy: divide into quantiles and sample from each
-    n_quantiles = min(n_samples, len(df_class))
-    
-    # Use age as primary stratification variable
-    df_sorted = df_class.sort_values('age').reset_index(drop=True)
-    quantile_size = len(df_sorted) // n_quantiles
-    
-    for i in range(n_quantiles):
-        if i == n_quantiles - 1:
-            # Last quantile: take remaining
-            subset = df_sorted.iloc[i*quantile_size:]
-        else:
-            subset = df_sorted.iloc[i*quantile_size:(i+1)*quantile_size]
-        
-        if len(subset) > 0:
-            # Randomly sample one from this quantile
-            sampled = subset.sample(n=1, random_state=42+i)
-            selected_indices.append(sampled.index[0])
-    
-    # If we need more samples, randomly sample from remaining
-    if len(selected_indices) < n_samples:
-        remaining = df_sorted.drop(selected_indices)
-        additional = remaining.sample(n=n_samples-len(selected_indices), random_state=42)
-        selected_indices.extend(additional.index.tolist())
-    
-    return df_sorted.loc[selected_indices[:n_samples]]
+# Perform stratified split to get representative sample
+_, representative_sample_initial, _, _ = train_test_split(
+    df_original_scale, 
+    df_original_scale['stroke'],
+    test_size=0.05,  # Get roughly 5% which gives us ~250 samples
+    stratify=df_original_scale['stroke'],
+    random_state=42
+)
 
+print(f"\nInitial stratified sample size: {len(representative_sample_initial)}")
+print(f"Stroke cases in initial sample: {sum(representative_sample_initial['stroke'] == 1)}")
+print(f"Non-stroke cases in initial sample: {sum(representative_sample_initial['stroke'] == 0)}")
+
+# Step 2: From stratified sample, select diverse samples based on top features
 top_features = ['age', 'hypertension', 'avg_glucose_level', 'bmi', 'smoking_status']
 
-# Select 5 stroke cases
-stroke_sample = select_diverse_samples(stroke_df, 5, top_features)
-print(f"\nSelected {len(stroke_sample)} stroke cases")
+def select_diverse_stratified_samples(df_class, n_samples, top_features):
+    """
+    Select diverse samples using stratified quantile-based sampling.
+    Ensures diversity across multiple feature dimensions.
+    """
+    if len(df_class) <= n_samples:
+        return df_class.sample(n=len(df_class), random_state=42)
+    
+    # Create composite stratification based on quantiles of top features
+    df_work = df_class.copy()
+    
+    # For numeric features, create quantile bins
+    df_work['age_bin'] = pd.qcut(df_work['age'], q=min(5, len(df_work)), labels=False, duplicates='drop')
+    df_work['glucose_bin'] = pd.qcut(df_work['avg_glucose_level'], q=min(3, len(df_work)), labels=False, duplicates='drop')
+    df_work['bmi_bin'] = pd.qcut(df_work['bmi'], q=min(3, len(df_work)), labels=False, duplicates='drop')
+    
+    # Create strata combining multiple features
+    df_work['strata'] = (df_work['age_bin'].astype(str) + '_' + 
+                         df_work['hypertension'].astype(str) + '_' + 
+                         df_work['glucose_bin'].astype(str) + '_' +
+                         df_work['bmi_bin'].astype(str) + '_' +
+                         df_work['smoking_status'].astype(str))
+    
+    # Sample from each stratum
+    strata_counts = df_work['strata'].value_counts()
+    samples_per_stratum = max(1, n_samples // len(strata_counts))
+    
+    selected_samples = []
+    remaining_needed = n_samples
+    
+    # First pass: sample from each stratum
+    for stratum in strata_counts.index:
+        if remaining_needed <= 0:
+            break
+        stratum_data = df_work[df_work['strata'] == stratum]
+        n_to_sample = min(samples_per_stratum, len(stratum_data), remaining_needed)
+        sampled = stratum_data.sample(n=n_to_sample, random_state=42)
+        selected_samples.append(sampled)
+        remaining_needed -= n_to_sample
+    
+    # Second pass: if we need more samples, take from remaining strata
+    if remaining_needed > 0:
+        already_selected = pd.concat(selected_samples).index
+        remaining_data = df_work.drop(already_selected)
+        if len(remaining_data) > 0:
+            additional = remaining_data.sample(n=min(remaining_needed, len(remaining_data)), random_state=42)
+            selected_samples.append(additional)
+    
+    result = pd.concat(selected_samples)
+    
+    # Drop helper columns and return original data
+    return df_class.loc[result.index].iloc[:n_samples]
 
-# Select 10 non-stroke cases
-no_stroke_sample = select_diverse_samples(no_stroke_df, 10, top_features)
-print(f"Selected {len(no_stroke_sample)} non-stroke cases")
+# Separate by class from initial stratified sample
+stroke_df = representative_sample_initial[representative_sample_initial['stroke'] == 1].reset_index(drop=True)
+no_stroke_df = representative_sample_initial[representative_sample_initial['stroke'] == 0].reset_index(drop=True)
+
+print(f"\n--- Applying Stratified Diverse Sampling ---")
+print(f"Available stroke cases: {len(stroke_df)}")
+print(f"Available non-stroke cases: {len(no_stroke_df)}")
+
+# Select 5 stroke cases with diversity
+stroke_sample = select_diverse_stratified_samples(stroke_df, n_stroke_needed, top_features)
+print(f"\nSelected {len(stroke_sample)} stroke cases using stratified sampling")
+print(f"Age range: {stroke_sample['age'].min():.1f} - {stroke_sample['age'].max():.1f}")
+print(f"Glucose range: {stroke_sample['avg_glucose_level'].min():.1f} - {stroke_sample['avg_glucose_level'].max():.1f}")
+
+# Select 10 non-stroke cases with diversity
+no_stroke_sample = select_diverse_stratified_samples(no_stroke_df, n_no_stroke_needed, top_features)
+print(f"\nSelected {len(no_stroke_sample)} non-stroke cases using stratified sampling")
+print(f"Age range: {no_stroke_sample['age'].min():.1f} - {no_stroke_sample['age'].max():.1f}")
+print(f"Glucose range: {no_stroke_sample['avg_glucose_level'].min():.1f} - {no_stroke_sample['avg_glucose_level'].max():.1f}")
 
 # Combine
 representative_sample = pd.concat([stroke_sample, no_stroke_sample]).reset_index(drop=True)
 print(f"\nTotal representative sample size: {len(representative_sample)}")
+print("Stratification method: Stratified random sampling with feature diversity")
 
 # Save representative sample (with original scale for interpretation)
 representative_sample.to_csv("representative_sample.csv", index=False)
@@ -335,6 +384,7 @@ print("="*60)
 
 rf_model = RandomForestClassifier(random_state=42)
 
+# My parameters for GridSearchCV
 param_grid_rf = {
     'n_estimators': [200, 400],
     'max_depth': [10, 20, None],
