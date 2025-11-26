@@ -3,7 +3,7 @@
 ML-based Stroke Risk Prediction and Explanation System
 
 Uses representative sample for individual predictions and LLM-based explanations.
-Includes OpenAI-compatible LLM wrapper function.
+Interactive patient selection via user input.
 """
 
 import os
@@ -13,109 +13,11 @@ import shap
 import numpy as np
 from openai import OpenAI
 from sklearn.preprocessing import StandardScaler
-
-# ================================
-# LLM WRAPPER FUNCTION (OpenAI API Compatible)
-# ================================
-
-class LLMWrapper:
-    """
-    OpenAI-compatible LLM wrapper for flexible integration.
-    Supports any LLM service that implements OpenAI API format.
-    """
-    
-    def __init__(self, base_url, api_key, model_name):
-        """
-        Initialize LLM client.
-        
-        Args:
-            base_url (str): Base URL of the LLM service
-            api_key (str): API key for authentication
-            model_name (str): Model name/identifier
-        """
-        self.client = OpenAI(base_url=base_url, api_key=api_key)
-        self.model_name = model_name
-    
-    def generate_completion(
-        self,
-        system_prompt,
-        user_prompt
-    ):
-        """
-        Generate text completion using chat API.
-        
-        Args:
-            system_prompt (str): System message defining assistant behavior
-            user_prompt (str): User query/request
-            max_tokens (int): Maximum tokens in response
-            temperature (float): Sampling temperature (0.0 = deterministic)
-            seed (int): Random seed for reproducibility
-            
-        Returns:
-            str: Generated text response
-        """
-        try:
-            response = self.client.chat.completions.create(
-                model=self.model_name,
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt}
-                ],
-            )
-            return response.choices[0].message.content
-        except Exception as e:
-            return f"Error generating completion: {str(e)}"
-    
-    def generate_completion_with_metadata(
-        self,
-        system_prompt,
-        user_prompt,
-        max_tokens=500,
-        temperature=0.0,
-        seed=42
-    ):
-        """
-        Generate completion with full metadata.
-        
-        Returns:
-            dict: Contains 'text', 'usage', 'model', 'finish_reason'
-        """
-        try:
-            response = self.client.chat.completions.create(
-                model=self.model_name,
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt}
-                ],
-                max_tokens=max_tokens,
-                temperature=temperature,
-                seed=seed
-            )
-            
-            return {
-                'text': response.choices[0].message.content,
-                'usage': {
-                    'prompt_tokens': response.usage.prompt_tokens,
-                    'completion_tokens': response.usage.completion_tokens,
-                    'total_tokens': response.usage.total_tokens
-                },
-                'model': response.model,
-                'finish_reason': response.choices[0].finish_reason
-            }
-        except Exception as e:
-            return {
-                'text': f"Error: {str(e)}",
-                'usage': None,
-                'model': None,
-                'finish_reason': 'error'
-            }
+from llm_wrapper import LLMWrapper
 
 # ================================
 # CONFIGURATION
 # ================================
-
-# Patient selection (0-based index in representative sample)
-PATIENT_INDEX = 1  # Select patient from representative sample
 
 # Model paths
 MODEL_PATH = "rf_stroke_model.pkl"
@@ -153,9 +55,10 @@ categorical_value_map = {
     "hypertension": {0: "Absent", 1: "Present"},
     "heart_disease": {0: "Absent", 1: "Present"},
     "ever_married": {0: "No", 1: "Yes"},
-    "work_type": {0: "Never_worked", 1: "Private", 2: "Self-employed", 3: "Govt_job", 4: "children"},
+    "work_type": {0: "Govt_job", 1: "Never_worked", 2: "Private", 3: "Self-employed", 4: "children"},
     "Residence_type": {0: "Rural", 1: "Urban"},
-    "smoking_status": {0: "Never smoked", 1: "Formerly smoked", 2: "Smokes", 3: "Unknown"}
+    "smoking_status": {1: "Unknown", 1: "Formerly smoked", 2: "never smoked", 3: "smokes"}
+
 }
 
 # Backward compatibility alias
@@ -208,13 +111,50 @@ print("="*60)
 
 representative_sample = pd.read_csv(REPRESENTATIVE_SAMPLE_PATH)
 print(f"Representative sample loaded: {len(representative_sample)} patients")
+print(f"Valid patient indices: 0 to {len(representative_sample)-1}")
 
-# Validate patient index
-if not (0 <= PATIENT_INDEX < len(representative_sample)):
-    raise IndexError(f"PATIENT_INDEX {PATIENT_INDEX} out of range (0-{len(representative_sample)-1})")
+# ================================
+# INTERACTIVE PATIENT SELECTION
+# ================================
+
+print("\n" + "="*60)
+print("PATIENT SELECTION")
+print("="*60)
+
+while True:
+    try:
+        user_input = input(f"\nEnter patient index (0-{len(representative_sample)-1}): ").strip()
+        PATIENT_INDEX = int(user_input)
+        
+        if 0 <= PATIENT_INDEX < len(representative_sample):
+            print(f"[OK] Selected patient index: {PATIENT_INDEX}")
+            break
+        else:
+            print(f"[ERROR] Index out of range. Please enter a value between 0 and {len(representative_sample)-1}")
+    except ValueError:
+        print("[ERROR] Invalid input. Please enter a valid integer.")
+    except KeyboardInterrupt:
+        print("\n\n[EXIT] Program terminated by user.")
+        exit(0)
 
 # Get selected patient (original values)
 patient_original = representative_sample.iloc[PATIENT_INDEX].copy()
+
+# ================================
+# DISPLAY PATIENT INFORMATION
+# ================================
+
+print("\n" + "="*60)
+print("PATIENT INFORMATION")
+print("="*60)
+print(f"\nPatient Index: {PATIENT_INDEX}")
+print("\nFeature Values:")
+
+for feature, value in patient_original.items():
+    if feature in feature_name_map:
+        feature_display = feature_name_map[feature]
+        value_display = format_value(feature, value)
+        print(f"  {feature_display}: {value_display}")
 
 # ================================
 # PREPROCESS PATIENT FOR PREDICTION
@@ -293,7 +233,7 @@ df_sorted = df_shap.sort_values("abs_shap", ascending=False).reset_index(drop=Tr
 
 for idx, row in df_sorted.iterrows():
     feature_mapped = feature_name_map.get(row['feature'], row['feature'])
-    print(f"  {idx+1}. {feature_mapped}: {row['shap_value']:+.4f}")
+    print(f"  {feature_mapped}: {row['shap_value']:+.4f}")
 
 # ================================
 # AI-XAI-LLM OUTPUT
@@ -309,6 +249,19 @@ top_feature_list = ", ".join([
     for f in top3['feature'].tolist()
 ])
 
+# Build patient feature block
+patient_feature_block = "\n".join([
+    f"{feature_name_map.get(f, f)}: {format_value(f, v)}"
+    for f, v in patient_original.items()
+    if f in feature_name_map
+])
+
+# Display Stroke Risk and Patient Data
+print(f"\nStroke Risk: {risk_label}\n")
+print("Patient Data:")
+print(patient_feature_block)
+print()
+
 # Initialize LLM wrapper
 llm = LLMWrapper(
     base_url=LMSTUDIO_CONFIG['base_url'],
@@ -322,13 +275,6 @@ model_name = LMSTUDIO_CONFIG['model_name']
 
 # Provide `prediction` variable to match notebook prompts that use {prediction}
 prediction = stroke_pred
-
-# Build patient feature block
-patient_feature_block = "\n".join([
-    f"{feature_name_map.get(f, f)}: {format_value(f, v)}"
-    for f, v in patient_original.items()
-    if f in feature_name_map
-])
 
 # --- System prompt ---
 system_prompt = (
@@ -423,6 +369,7 @@ Begin your explanation now:
 """
 
 # --- Send to LM Studio (notebook-style call) ---
+print("Explanation:")
 response = client.chat.completions.create(
     model=model_name,
     messages=[
