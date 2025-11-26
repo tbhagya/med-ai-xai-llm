@@ -402,24 +402,31 @@ Patient Data:
 Clinical Explanation:
 You must explain exactly these three features: {feature_1}, {feature_2}, and {feature_3}.
 
-Write in this exact format:
-- First paragraph: "The input features that had the greatest impact on the stroke risk prediction were {top_feature_list}."
-- Second paragraph: Start with "{feature_1}:" then 2-3 sentences explaining this feature.
-- Third paragraph: Start with "{feature_2}:" then 2-3 sentences explaining this feature.
-- Fourth paragraph: Start with "{feature_3}:" then 2-3 sentences explaining this feature.
-- End with "Overall Summary:" followed by one sentence summarising the combined effect of these features on stroke risk.
-- Write as plain text paragraphs exactly like the examples
+REQUIRED FORMAT - You must follow this EXACTLY:
 
-Explain each feature in 2-3 clinical sentences describing its medical relevance and how this patient's value affects stroke risk.
-Do not include any advice or recommendations.
-You MUST end with an "Overall Summary:" paragraph.
+1. First paragraph: "The input features that had the greatest impact on the stroke risk prediction were {top_feature_list}."
+
+2. Second paragraph: Start with "{feature_1}:" then write 2-3 sentences explaining this feature.
+
+3. Third paragraph: Start with "{feature_2}:" then write 2-3 sentences explaining this feature.
+
+4. Fourth paragraph: Start with "{feature_3}:" then write 2-3 sentences explaining this feature.
+
+5. MANDATORY FINAL PARAGRAPH: Start with "Overall Summary:" followed by 1-2 sentences summarizing how these three features combined affect stroke risk.
+
+IMPORTANT RULES:
+- Write as plain text paragraphs exactly like the examples above
+- Explain each feature in 2-3 clinical sentences describing its medical relevance
+- Do not include any advice or recommendations
+- You MUST include the "Overall Summary:" paragraph at the end - this is mandatory
+- The Overall Summary must synthesize all three features together
 """
 
 # Generate explanation
 llm_response = llm.generate_completion_with_metadata(
     system_prompt=system_prompt,
     user_prompt=user_prompt,
-    max_tokens=500,
+    max_tokens=800,
     temperature=0.0,
     seed=42
 )
