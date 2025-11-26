@@ -1,3 +1,16 @@
+#!/usr/bin/env python3
+"""
+Data Preprocessing Script for Stroke Prediction System
+
+This script handles:
+- Dataset loading from Kaggle
+- Exploratory Data Analysis (EDA)
+- Data preprocessing (encoding, imputation, normalization)
+- Representative sample selection
+- SMOTE application on remaining data
+- Saving all preprocessed artifacts
+"""
+
 # ================================
 # IMPORTS
 # ================================
@@ -17,35 +30,32 @@ from collections import Counter
 from sklearn.preprocessing import StandardScaler, OrdinalEncoder
 from sklearn.impute import KNNImputer
 
-# Model selection
-from sklearn.model_selection import train_test_split, StratifiedKFold, GridSearchCV
-
-# ML models
-from sklearn.ensemble import RandomForestClassifier
-
 # SMOTE
 from imblearn.over_sampling import SMOTE
-
-# Metrics
-from sklearn.metrics import (
-    classification_report,
-    confusion_matrix,
-    roc_curve,
-    auc,
-    roc_auc_score,
-    precision_score,
-    recall_score,
-    f1_score,
-    accuracy_score
-)
 
 import kagglehub
 
 sns.set(style="whitegrid")
 
+print("="*60)
+print("STROKE PREDICTION - DATA PREPROCESSING")
+print("="*60)
+
+# ================================
+# CREATE OUTPUT DIRECTORIES
+# ================================
+print("\nCreating output directories...")
+os.makedirs("data", exist_ok=True)
+os.makedirs("plots", exist_ok=True)
+print("✓ Directories created: data/, plots/")
+
 # ================================
 # LOAD DATASET
 # ================================
+print("\n" + "="*60)
+print("LOADING DATASET")
+print("="*60)
+
 path = kagglehub.dataset_download("fedesoriano/stroke-prediction-dataset")
 print("Dataset downloaded to:", path)
 
@@ -98,38 +108,128 @@ for col in cat_cols:
     print(data_df[col].value_counts())
 
 # Visualizations
+# Create comprehensive EDA summary in one figure
+fig = plt.figure(figsize=(20, 12))
+gs = fig.add_gridspec(3, 4, hspace=0.3, wspace=0.3)
+
+# Row 1: Class distribution (bar + pie) and Gender distribution
+ax1 = fig.add_subplot(gs[0, 0])
+stroke_counts = data_df['stroke'].value_counts()
+sns.countplot(x='stroke', data=data_df, ax=ax1, palette='Set2')
+ax1.set_title("Class Distribution (Bar Chart)", fontsize=12, fontweight='bold')
+ax1.set_xlabel("Stroke (0=No, 1=Yes)")
+ax1.set_ylabel("Count")
+for i, v in enumerate(stroke_counts):
+    ax1.text(i, v + 50, str(v), ha='center', va='bottom', fontweight='bold')
+
+ax2 = fig.add_subplot(gs[0, 1])
+colors = ['#66b3ff', '#ff6666']
+ax2.pie(stroke_counts, labels=['No Stroke', 'Stroke'], autopct='%1.1f%%', 
+        colors=colors, startangle=90, textprops={'fontsize': 10, 'fontweight': 'bold'})
+ax2.set_title("Class Distribution (Pie Chart)", fontsize=12, fontweight='bold')
+
+ax3 = fig.add_subplot(gs[0, 2])
+gender_counts = data_df['gender'].value_counts()
+ax3.bar(range(len(gender_counts)), gender_counts.values, color=['#99ccff', '#ff99cc'])
+ax3.set_xticks(range(len(gender_counts)))
+ax3.set_xticklabels(gender_counts.index)
+ax3.set_title("Gender Distribution", fontsize=12, fontweight='bold')
+ax3.set_ylabel("Count")
+for i, v in enumerate(gender_counts.values):
+    ax3.text(i, v + 50, str(v), ha='center', va='bottom', fontweight='bold')
+
+ax4 = fig.add_subplot(gs[0, 3])
+work_counts = data_df['work_type'].value_counts()
+ax4.barh(range(len(work_counts)), work_counts.values, color='skyblue')
+ax4.set_yticks(range(len(work_counts)))
+ax4.set_yticklabels(work_counts.index)
+ax4.set_title("Work Type Distribution", fontsize=12, fontweight='bold')
+ax4.set_xlabel("Count")
+for i, v in enumerate(work_counts.values):
+    ax4.text(v + 50, i, str(v), va='center', fontweight='bold')
+
+# Row 2: Numeric distributions with histograms
+numeric_cols = ['age', 'avg_glucose_level', 'bmi']
+for i, col in enumerate(numeric_cols):
+    ax = fig.add_subplot(gs[1, i])
+    sns.histplot(data_df[col].dropna(), kde=True, ax=ax, color='steelblue')
+    ax.set_title(f"{col.replace('_', ' ').title()} Distribution", fontsize=12, fontweight='bold')
+    ax.set_xlabel(col.replace('_', ' ').title())
+    ax.set_ylabel("Frequency")
+
+# Row 2, Column 4: Smoking status pie chart
+ax7 = fig.add_subplot(gs[1, 3])
+smoking_counts = data_df['smoking_status'].value_counts()
+ax7.pie(smoking_counts, labels=smoking_counts.index, autopct='%1.1f%%', 
+        startangle=90, textprops={'fontsize': 9})
+ax7.set_title("Smoking Status Distribution", fontsize=12, fontweight='bold')
+
+# Row 3: Stroke vs numeric features (boxplots)
+for i, col in enumerate(numeric_cols):
+    ax = fig.add_subplot(gs[2, i])
+    sns.boxplot(x='stroke', y=col, data=data_df, ax=ax, palette='Set2')
+    ax.set_title(f"{col.replace('_', ' ').title()} by Stroke Status", fontsize=12, fontweight='bold')
+    ax.set_xlabel("Stroke (0=No, 1=Yes)")
+    ax.set_ylabel(col.replace('_', ' ').title())
+
+# Row 3, Column 4: Correlation heatmap (smaller)
+ax11 = fig.add_subplot(gs[2, 3])
+temp_df = data_df.copy()
+encoder_temp = OrdinalEncoder()
+temp_df[cat_cols] = encoder_temp.fit_transform(temp_df[cat_cols].astype(str))
+corr_matrix = temp_df[['age', 'hypertension', 'heart_disease', 'avg_glucose_level', 'bmi', 'stroke']].corr()
+sns.heatmap(corr_matrix, annot=True, fmt='.2f', cmap='coolwarm', center=0, ax=ax11, 
+            cbar_kws={'shrink': 0.8}, annot_kws={'fontsize': 8})
+ax11.set_title("Correlation Heatmap (Key Features)", fontsize=12, fontweight='bold')
+
+# Add main title
+fig.suptitle('Comprehensive Exploratory Data Analysis - Stroke Prediction Dataset', 
+             fontsize=16, fontweight='bold', y=0.995)
+
+# Save comprehensive EDA summary
+plt.savefig("plots/eda_comprehensive_summary.png", dpi=150, bbox_inches='tight')
+plt.close()
+print("\n✓ Saved: plots/eda_comprehensive_summary.png (ALL plots in one view)")
+
+# Also save individual plots for reference
 # Class distribution
 plt.figure(figsize=(6,4))
-sns.countplot(x='stroke', data=data_df)
+sns.countplot(x='stroke', data=data_df, palette='Set2')
 plt.title("Class Distribution (Original)")
 plt.xlabel("Stroke (0=No, 1=Yes)")
 plt.ylabel("Count")
-plt.show()
+plt.savefig("plots/eda_class_distribution.png", dpi=150, bbox_inches='tight')
+plt.close()
+print("✓ Saved: plots/eda_class_distribution.png")
 
 # Numeric distributions
-numeric_cols = ['age', 'avg_glucose_level', 'bmi']
-
 plt.figure(figsize=(14,5))
 for i, col in enumerate(numeric_cols, 1):
     plt.subplot(1, 3, i)
     sns.histplot(data_df[col].dropna(), kde=True)
     plt.title(f"{col} Distribution")
 plt.tight_layout()
-plt.show()
+plt.savefig("plots/eda_numeric_distributions.png", dpi=150, bbox_inches='tight')
+plt.close()
+print("✓ Saved: plots/eda_numeric_distributions.png")
 
 # Boxplots for outliers
 plt.figure(figsize=(10,4))
 sns.boxplot(data=data_df[numeric_cols])
 plt.title("Boxplots — Potential Outliers")
-plt.show()
+plt.savefig("plots/eda_boxplots.png", dpi=150, bbox_inches='tight')
+plt.close()
+print("✓ Saved: plots/eda_boxplots.png")
 
 # Stroke vs numeric features
 fig, axes = plt.subplots(1, 3, figsize=(15, 4))
 for idx, col in enumerate(numeric_cols):
-    sns.boxplot(x='stroke', y=col, data=data_df, ax=axes[idx])
+    sns.boxplot(x='stroke', y=col, data=data_df, ax=axes[idx], palette='Set2')
     axes[idx].set_title(f"{col} by Stroke Status")
 plt.tight_layout()
-plt.show()
+plt.savefig("plots/eda_stroke_vs_numeric.png", dpi=150, bbox_inches='tight')
+plt.close()
+print("✓ Saved: plots/eda_stroke_vs_numeric.png")
 
 # Correlation heatmap
 plt.figure(figsize=(10, 8))
@@ -141,7 +241,9 @@ corr_matrix = temp_df.corr(numeric_only=True)
 sns.heatmap(corr_matrix, annot=True, fmt='.2f', cmap='coolwarm', center=0)
 plt.title("Correlation Heatmap")
 plt.tight_layout()
-plt.show()
+plt.savefig("plots/eda_correlation_heatmap.png", dpi=150, bbox_inches='tight')
+plt.close()
+print("✓ Saved: plots/eda_correlation_heatmap.png")
 
 print("\n" + "="*60)
 print("EDA COMPLETED")
@@ -192,6 +294,8 @@ print("="*60)
 print("\n" + "="*60)
 print("REPRESENTATIVE SAMPLE SELECTION (STRATIFIED SAMPLING)")
 print("="*60)
+
+from sklearn.model_selection import train_test_split
 
 X = df.drop(columns=['id', 'stroke'])
 y = df['stroke']
@@ -310,8 +414,8 @@ print(f"\nTotal representative sample size: {len(representative_sample)}")
 print("Stratification method: Stratified random sampling with feature diversity")
 
 # Save representative sample (with original scale for interpretation)
-representative_sample.to_csv("representative_sample.csv", index=False)
-print("\nRepresentative sample saved to 'representative_sample.csv'")
+representative_sample.to_csv("data/representative_sample.csv", index=False)
+print("\n✓ Representative sample saved to 'data/representative_sample.csv'")
 
 print("\nRepresentative Sample Distribution:")
 print(representative_sample['stroke'].value_counts())
@@ -371,180 +475,43 @@ print("\nAfter SMOTE:")
 print(Counter(y_smote))
 print(f"SMOTE dataset shape: {X_smote.shape}")
 
-print("\n" + "="*60)
-print("SMOTE COMPLETED")
-print("="*60)
-
 # ================================
-# 5. HYPERPARAMETER TUNING WITH GRIDSEARCH
+# 5. SAVE PREPROCESSED DATA AND ARTIFACTS
 # ================================
 print("\n" + "="*60)
-print("HYPERPARAMETER TUNING")
+print("SAVING PREPROCESSED DATA AND ARTIFACTS")
 print("="*60)
 
-rf_model = RandomForestClassifier(random_state=42)
+# Save SMOTE data
+X_smote_df = pd.DataFrame(X_smote, columns=X_remaining.columns)
+y_smote_df = pd.Series(y_smote, name='stroke')
 
-# My parameters for GridSearchCV
-param_grid_rf = {
-    'n_estimators': [200, 400],
-    'max_depth': [10, 20, None],
-    'min_samples_split': [2, 5],
-    'min_samples_leaf': [1, 2],
-    'max_features': ['sqrt', 'log2']
-}
+X_smote_df.to_csv("data/X_smote.csv", index=False)
+y_smote_df.to_csv("data/y_smote.csv", index=False)
+print("✓ SMOTE data saved: data/X_smote.csv, data/y_smote.csv")
 
-print("\nRunning GridSearchCV on SMOTE-balanced dataset...")
-print(f"Parameter grid: {param_grid_rf}")
+# Save scaler and encoder
+joblib.dump(scaler, "data/zscore_scaler.pkl")
+print("✓ Scaler saved: data/zscore_scaler.pkl")
 
-grid_rf = GridSearchCV(
-    rf_model,
-    param_grid_rf,
-    cv=5,
-    scoring='recall',  # Focus on recall as per requirements
-    n_jobs=-1,
-    verbose=2,
-    return_train_score=True
-)
+joblib.dump(encoder, "data/ordinal_encoder.pkl")
+print("✓ Encoder saved: data/ordinal_encoder.pkl")
 
-grid_rf.fit(X_smote, y_smote)
-
-best_params = grid_rf.best_params_
-print("\n" + "="*60)
-print("BEST HYPERPARAMETERS FOUND:")
-print("="*60)
-print(best_params)
-print(f"\nBest CV Recall Score: {grid_rf.best_score_:.4f}")
-
-print("\n" + "="*60)
-print("HYPERPARAMETER TUNING COMPLETED")
-print("="*60)
-
-# ================================
-# 6. 5-FOLD CROSS-VALIDATION WITH OPTIMIZED PARAMETERS
-# ================================
-print("\n" + "="*60)
-print("5-FOLD CROSS-VALIDATION WITH OPTIMIZED HYPERPARAMETERS")
-print("="*60)
-
-# Create model with best parameters
-best_rf_model = RandomForestClassifier(**best_params, random_state=42)
-
-# 5-fold stratified CV
-skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
-
-# Metrics storage
-cv_metrics = {
-    'Accuracy': [],
-    'Precision': [],
-    'Recall': [],
-    'F1': [],
-    'ROC-AUC': []
-}
-
-print("\nPerforming 5-fold cross-validation...")
-
-for fold, (train_idx, val_idx) in enumerate(skf.split(X_smote, y_smote), 1):
-    print(f"\nFold {fold}...")
-    
-    X_train_fold = X_smote.iloc[train_idx] if isinstance(X_smote, pd.DataFrame) else pd.DataFrame(X_smote).iloc[train_idx]
-    X_val_fold = X_smote.iloc[val_idx] if isinstance(X_smote, pd.DataFrame) else pd.DataFrame(X_smote).iloc[val_idx]
-    y_train_fold = y_smote.iloc[train_idx] if isinstance(y_smote, pd.Series) else pd.Series(y_smote).iloc[train_idx]
-    y_val_fold = y_smote.iloc[val_idx] if isinstance(y_smote, pd.Series) else pd.Series(y_smote).iloc[val_idx]
-    
-    # Train model
-    fold_model = RandomForestClassifier(**best_params, random_state=42)
-    fold_model.fit(X_train_fold, y_train_fold)
-    
-    # Predictions
-    y_pred = fold_model.predict(X_val_fold)
-    y_prob = fold_model.predict_proba(X_val_fold)[:, 1]
-    
-    # Calculate metrics
-    cv_metrics['Accuracy'].append(accuracy_score(y_val_fold, y_pred))
-    cv_metrics['Precision'].append(precision_score(y_val_fold, y_pred))
-    cv_metrics['Recall'].append(recall_score(y_val_fold, y_pred))
-    cv_metrics['F1'].append(f1_score(y_val_fold, y_pred))
-    cv_metrics['ROC-AUC'].append(roc_auc_score(y_val_fold, y_prob))
-
-print("\n" + "="*60)
-print("CROSS-VALIDATION RESULTS (Mean ± Std)")
-print("="*60)
-
-for metric, values in cv_metrics.items():
-    mean_val = np.mean(values)
-    std_val = np.std(values)
-    print(f"{metric:12s}: {mean_val:.4f} ± {std_val:.4f}")
-
-print("\n" + "="*60)
-print("CROSS-VALIDATION COMPLETED")
-print("="*60)
-
-# ================================
-# 7. TRAIN FINAL MODEL ON FULL SMOTE DATASET
-# ================================
-print("\n" + "="*60)
-print("TRAINING FINAL MODEL ON FULL SMOTE DATASET")
-print("="*60)
-
-final_model = RandomForestClassifier(**best_params, random_state=42)
-final_model.fit(X_smote, y_smote)
-
-print("\nFinal model trained on full SMOTE dataset")
-print(f"Training samples: {X_smote.shape[0]}")
-print(f"Features: {X_smote.shape[1]}")
-
-# Feature importance
+# Save feature names
 feature_names = X_remaining.columns.tolist()
-importances = final_model.feature_importances_
-indices = np.argsort(importances)[::-1]
+joblib.dump(feature_names, "data/feature_names.pkl")
+print("✓ Feature names saved: data/feature_names.pkl")
 
-print("\n--- Feature Importances ---")
-for i in range(len(feature_names)):
-    print(f"{i+1}. {feature_names[indices[i]]}: {importances[indices[i]]:.4f}")
-
-# Plot feature importance
-plt.figure(figsize=(10, 6))
-plt.barh(range(len(indices)), importances[indices])
-plt.yticks(range(len(indices)), [feature_names[i] for i in indices])
-plt.xlabel("Feature Importance")
-plt.title("Random Forest Feature Importance (Final Model)")
-plt.gca().invert_yaxis()
-plt.tight_layout()
-plt.show()
-
-# ================================
-# 8. SAVE MODEL AND ARTIFACTS
-# ================================
-print("\n" + "="*60)
-print("SAVING MODEL AND ARTIFACTS")
-print("="*60)
-
-joblib.dump(final_model, "rf_stroke_model.pkl")
-print("Model saved: rf_stroke_model.pkl")
-
-joblib.dump(feature_names, "rf_features.pkl")
-print("Feature names saved: rf_features.pkl")
-
-joblib.dump(scaler, "zscore_scaler.pkl")
-print("Scaler saved: zscore_scaler.pkl")
-
-joblib.dump(encoder, "ordinal_encoder.pkl")
-print("Encoder saved: ordinal_encoder.pkl")
-
-joblib.dump(best_params, "best_params.pkl")
-print("Best parameters saved: best_params.pkl")
-
-# Save CV results
-cv_results_df = pd.DataFrame(cv_metrics)
-cv_results_df.to_csv("cv_results.csv", index=False)
-print("CV results saved: cv_results.csv")
+# Save imputer
+joblib.dump(imputer, "data/knn_imputer.pkl")
+print("✓ Imputer saved: data/knn_imputer.pkl")
 
 print("\n" + "="*60)
-print("ALL TASKS COMPLETED SUCCESSFULLY!")
+print("DATA PREPROCESSING COMPLETED SUCCESSFULLY!")
 print("="*60)
 print("\nSummary:")
 print(f"- Representative sample: 15 patients (5 stroke, 10 non-stroke)")
 print(f"- SMOTE dataset: {X_smote.shape[0]} samples")
-print(f"- Best hyperparameters: {best_params}")
-print(f"- Cross-validation metrics saved")
-print(f"- Final model trained and saved")
+print(f"- Features: {X_smote.shape[1]}")
+print(f"- All artifacts saved for model training")
+print("\nNext step: Run modeltrainer.sh")
