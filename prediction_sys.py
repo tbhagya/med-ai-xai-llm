@@ -57,8 +57,7 @@ categorical_value_map = {
     "ever_married": {0: "No", 1: "Yes"},
     "work_type": {0: "Govt_job", 1: "Never_worked", 2: "Private", 3: "Self-employed", 4: "children"},
     "Residence_type": {0: "Rural", 1: "Urban"},
-    "smoking_status": {1: "Unknown", 1: "Formerly smoked", 2: "never smoked", 3: "smokes"}
-
+    "smoking_status": {0: "Unknown", 1: "Formerly smoked", 2: "never smoked", 3: "smokes"}
 }
 
 # Backward compatibility alias
@@ -157,27 +156,20 @@ for feature, value in patient_original.items():
         print(f"  {feature_display}: {value_display}")
 
 # ================================
-# PREPROCESS PATIENT FOR PREDICTION
+# PREPARE PATIENT FOR PREDICTION
 # ================================
 
 print("\n" + "="*60)
-print("PREPROCESSING PATIENT DATA")
+print("PREPARING PATIENT DATA")
 print("="*60)
 
-# Create single-row dataframe
+# Create single-row dataframe (data is already preprocessed in representative_sample.csv)
 patient_df = pd.DataFrame([patient_original])
-
-# Encode categorical features (already in encoded form in CSV, but we'll use original logic)
-cat_cols = ['gender', 'ever_married', 'work_type', 'Residence_type', 'smoking_status']
-numeric_cols = ['age', 'avg_glucose_level', 'bmi']
-
-# Normalize numeric features
-patient_df[numeric_cols] = scaler.transform(patient_df[numeric_cols])
 
 # Extract features for prediction
 X_patient = patient_df[feature_names]
 
-print("[OK] Patient data preprocessed")
+print("[OK] Patient data prepared")
 
 # ================================
 # AI OUTPUT
