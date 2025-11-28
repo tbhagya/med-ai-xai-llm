@@ -80,11 +80,9 @@ def format_value(feature, value):
 # ================================
 
 # Model paths
-MODEL_PATH = "rf_stroke_model.pkl"
-FEATURES_PATH = "rf_features.pkl"
-SCALER_PATH = "zscore_scaler.pkl"
-ENCODER_PATH = "ordinal_encoder.pkl"
-REPRESENTATIVE_SAMPLE_PATH = "representative_sample.csv"
+MODEL_PATH = "models/rf_stroke_model.pkl"
+FEATURES_PATH = "models/rf_features.pkl"
+REPRESENTATIVE_SAMPLE_PATH = "data/representative_sample.csv"
 
 # LLM configuration (LM Studio)
 LMSTUDIO_CONFIG = {
@@ -126,8 +124,6 @@ else:
 required_files = [
     MODEL_PATH,
     FEATURES_PATH,
-    SCALER_PATH,
-    ENCODER_PATH,
     REPRESENTATIVE_SAMPLE_PATH
 ]
 
@@ -150,13 +146,9 @@ print("="*60)
 
 rf_model = joblib.load(MODEL_PATH)
 feature_names = joblib.load(FEATURES_PATH)
-scaler = joblib.load(SCALER_PATH)
-encoder = joblib.load(ENCODER_PATH)
 
 print("[OK] Model loaded")
 print("[OK] Feature names loaded")
-print("[OK] Scaler loaded")
-print("[OK] Encoder loaded")
 
 # ================================
 # LOAD REPRESENTATIVE SAMPLE
@@ -223,27 +215,20 @@ for feature, value in patient_original.items():
         print(f"  {feature_display}: {value_display}")
 
 # ================================
-# PREPROCESS PATIENT FOR PREDICTION
+# PREPARE PATIENT FOR PREDICTION
 # ================================
 
 print("\n" + "="*60)
-print("PREPROCESSING PATIENT DATA")
+print("PREPARING PATIENT DATA")
 print("="*60)
 
-# Create single-row dataframe
+# Create single-row dataframe (data is already preprocessed in representative_sample.csv)
 patient_df = pd.DataFrame([patient_original])
-
-# Encode categorical features (already in encoded form in CSV, but we'll use original logic)
-cat_cols = ['gender', 'ever_married', 'work_type', 'Residence_type', 'smoking_status']
-numeric_cols = ['age', 'avg_glucose_level', 'bmi']
-
-# Normalize numeric features
-patient_df[numeric_cols] = scaler.transform(patient_df[numeric_cols])
 
 # Extract features for prediction
 X_patient = patient_df[feature_names]
 
-print("[OK] Patient data preprocessed")
+print("[OK] Patient data prepared")
 
 # ================================
 # AI OUTPUT
