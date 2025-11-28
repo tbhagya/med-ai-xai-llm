@@ -12,18 +12,12 @@ echo ""
 if [ $# -eq 0 ]; then
     echo "ERROR: Patient index not provided!"
     echo ""
-    echo "Usage:"
-    echo "  ./instanceexplainer.sh <patient_index>"
+    PATIENT_INDEX=""
+else
+    PATIENT_INDEX=$1
+    echo "Using patient index: $PATIENT_INDEX"
     echo ""
-    echo "Example:"
-    echo "  ./instanceexplainer.sh 12"
-    echo ""
-    echo "Note: Patient index should be between 0 and 14 (15 patients in representative sample)"
-    read -p "Press Enter to exit..."
-    exit 1
 fi
-
-PATIENT_INDEX=$1
 
 # Check if virtual environment exists
 if [ ! -d "venv" ]; then
@@ -66,9 +60,15 @@ echo "Please ensure LM Studio is running before continuing."
 echo ""
 
 # Run the explanation script
-echo "Generating explanation for patient $PATIENT_INDEX..."
-echo ""
-python instanceexplainer.py $PATIENT_INDEX
+if [ -z "$PATIENT_INDEX" ]; then
+    echo "Starting interactive patient selection..."
+    echo ""
+    python instanceexplainer.py
+else
+    echo "Generating explanation for patient $PATIENT_INDEX..."
+    echo ""
+    python instanceexplainer.py $PATIENT_INDEX
+fi
 
 # Check if script executed successfully
 if [ $? -eq 0 ]; then
@@ -76,9 +76,6 @@ if [ $? -eq 0 ]; then
     echo "========================================"
     echo "Explanation generated successfully!"
     echo "========================================"
-    echo ""
-    echo "Generated file:"
-    echo "  reports/patient_${PATIENT_INDEX}_report.txt"
     echo ""
     echo "You can run this script again with different patient indices (0-14)"
     echo ""
