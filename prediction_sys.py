@@ -163,13 +163,19 @@ print("\n" + "="*60)
 print("PREPARING PATIENT DATA")
 print("="*60)
 
-# Create single-row dataframe (data is already preprocessed in representative_sample.csv)
+# Create single-row dataframe
 patient_df = pd.DataFrame([patient_original])
 
-# Extract features for prediction
-X_patient = patient_df[feature_names]
+# CRITICAL: The model was trained on SCALED data, so we must scale the input
+# Scale numeric features using the saved scaler
+numeric_cols = ['age', 'avg_glucose_level', 'bmi']
+patient_df_scaled = patient_df.copy()
+patient_df_scaled[numeric_cols] = scaler.transform(patient_df[numeric_cols])
 
-print("[OK] Patient data prepared")
+# Extract features for prediction (use SCALED data)
+X_patient = patient_df_scaled[feature_names]
+
+print("[OK] Patient data prepared and normalized")
 
 # ================================
 # AI OUTPUT
@@ -180,9 +186,11 @@ print("AI OUTPUT")
 print("="*60)
 
 stroke_pred = int(rf_model.predict(X_patient)[0])
+stroke_proba = rf_model.predict_proba(X_patient)[0]
 risk_label = "High" if stroke_pred == 1 else "Low"
 
 print(f"Stroke Risk Prediction: {risk_label}")
+print(f"Probability: [No Stroke: {stroke_proba[0]:.2%}, Stroke: {stroke_proba[1]:.2%}]")
 
 # ================================
 # XAI OUTPUT
@@ -209,14 +217,10 @@ def get_original_value(feature):
 
 df_shap["value_original"] = df_shap["feature"].apply(get_original_value)
 
-# Get top 3 features by SHAP value (for LLM explanation)
-df_positive = df_shap[df_shap["shap_value"] > 0].copy()
-
-if len(df_positive) < 3:
-    df_shap["abs_shap"] = df_shap["shap_value"].abs()
-    top3 = df_shap.nlargest(3, "abs_shap").reset_index(drop=True)
-else:
-    top3 = df_positive.nlargest(3, "shap_value").reset_index(drop=True)
+# Get top 3 features by absolute SHAP value (for LLM explanation)
+# Use absolute values to get the most impactful features regardless of direction
+df_shap["abs_shap"] = df_shap["shap_value"].abs()
+top3 = df_shap.nlargest(3, "abs_shap").reset_index(drop=True)
 
 # Display ALL SHAP values sorted by absolute value
 print("\nFeature Impact:")
