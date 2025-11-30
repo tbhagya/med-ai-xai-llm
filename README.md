@@ -135,7 +135,7 @@ python -c "import sklearn, pandas, numpy, shap, imblearn; print('All imports suc
 ### 5. Set Up LM Studio (for Instance Explanation)
 
 1. Download and install [LM Studio](https://lmstudio.ai/)
-2. Download a compatible model (e.g., `lmstudio-ai/gemma-2b-it-GGUF`)
+2. Download a compatible model (e.g., `google/gemma-3n-e4b`)
 3. Start the local server:
    - Open LM Studio
    - Load the model
