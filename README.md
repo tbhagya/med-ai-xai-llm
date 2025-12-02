@@ -302,14 +302,4 @@ python prediction_sys.py
 
 ## Important Notes
 
-### Result Variability
-
-**Note: Due to cross-validation and the use of the language model, these scripts will produce slightly different results each time they are executed.**
-
-This variability occurs due to:
-1. **Cross-validation shuffling**: Even with fixed random seeds, slight variations may occur
-2. **LLM temperature**: While set to 0.3 for deterministic behavior, LLM responses may still vary slightly
-3. **SMOTE randomisation**: SMOTE uses random sampling (controlled by `random_state=42`)
-4. **Random Forest**: Tree-based models have inherent randomness (controlled by `random_state=42`)
-
-The core predictions and SHAP values remain stable, but exact metric values and LLM phrasing may differ slightly between runs.
+**Due to cross-validation and the use of the language model, these scripts will produce slightly different results each time they are executed.**
