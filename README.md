@@ -41,18 +41,6 @@ source venv/Scripts/activate
 pip install -r requirements.txt
 ```
 
-Required packages:
-- numpy (>=1.24.0)
-- pandas (>=2.0.0)
-- scikit-learn (>=1.3.0)
-- imbalanced-learn (>=0.11.0)
-- joblib (>=1.3.0)
-- matplotlib (>=3.7.0)
-- seaborn (>=0.12.0)
-- shap (>=0.42.0)
-- openai (>=1.0.0)
-- kagglehub (>=0.2.0)
-
 ### 4. Verify Installation
 
 **Check Python version:**
