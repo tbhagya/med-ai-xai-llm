@@ -4,7 +4,7 @@
 # This script handles data loading, EDA, preprocessing, representative sample selection, and SMOTE
 
 echo "========================================"
-echo "Data Preprocessing for Stroke Prediction"
+echo "Data Preprocessing for AI-XAI-LLM"
 echo "========================================"
 echo ""
 

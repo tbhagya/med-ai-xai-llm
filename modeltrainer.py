@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Model Training Script for Stroke Prediction System
+Model Training Script for Ai-XAI-LLM
 
 This script handles:
 - Loading preprocessed SMOTE data
