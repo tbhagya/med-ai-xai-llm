@@ -145,23 +145,6 @@ bash modeltrainer.sh
 python modeltrainer.py
 ```
 
-**Output files:**
-- `models/rf_stroke_model.pkl` - Trained Random Forest model
-- `models/rf_features.pkl` - Feature names used by the model
-- `models/best_params.pkl` - Optimal hyperparameters from GridSearchCV
-- `models/cv_results.csv` - Detailed cross-validation results for each fold
-- `models/cv_summary.csv` - Summary statistics (mean ± std) for all metrics
-- `plots/feature_importance.png` - Feature importance plot
-
-**Expected runtime:** 10-30 minutes (depending on system performance)
-
-**Cross-validation metrics tracked:**
-- Accuracy
-- Precision
-- Recall (primary optimisation metric)
-- F1 Score
-- ROC-AUC
-
 ---
 
 ### Step 3: Instance Explanation
@@ -283,10 +266,6 @@ python prediction_sys.py
 **Prerequisites:** 
 - Must run `trained_ml.py` first to generate model artifacts
 - LM Studio must be running
-
-**Runtime:** ~30 seconds - 1 minute
-
-**Note:** The legacy scripts save artifacts to the root directory, while the modular workflow uses subdirectories (`data/`, `models/`, `plots/`, `reports/`).
 
 ## Important Notes
 
