@@ -114,17 +114,6 @@ bash datapreprocessor.sh
 python datapreprocessor.py
 ```
 
-**Output files:**
-- `data/representative_sample.csv` - 15 diverse patient samples (5 stroke, 10 non-stroke)
-- `data/X_smote.csv`, `data/y_smote.csv` - SMOTE-balanced training data
-- `data/zscore_scaler.pkl` - StandardScaler for normalization
-- `data/ordinal_encoder.pkl` - Encoder for categorical features
-- `data/knn_imputer.pkl` - KNN imputer for missing values
-- `data/feature_names.pkl` - List of feature names
-- `plots/*.png` - EDA visualization plots
-
-**Expected runtime:** 2-5 minutes (depending on internet speed for dataset download)
-
 ---
 
 ### Step 2: Model Training
@@ -219,53 +208,6 @@ source venv/bin/activate  # Linux/Mac
 ./instanceexplainer.sh 5   # First non-stroke patient
 ./instanceexplainer.sh 12  # Another patient
 ```
-
-## Alternative: Legacy All-in-One Scripts
-
-For quick testing or educational purposes, you can use the legacy scripts that combine multiple steps:
-
-### trained_ml.py - Complete ML Pipeline
-
-Runs the entire ML pipeline (EDA, preprocessing, training, evaluation) in one script:
-
-```bash
-python trained_ml.py
-```
-
-**What it does:**
-- Downloads and loads the dataset
-- Performs exploratory data analysis (EDA)
-- Preprocesses data (encoding, imputation, normalization)
-- Selects representative samples
-- Applies SMOTE for class balancing
-- Performs hyperparameter tuning with GridSearchCV
-- Trains and evaluates the model with 5-fold cross-validation
-- Saves all artifacts to the root directory
-
-**Runtime:** ~15-25 minutes
-
-**Output:** Saves model artifacts (`rf_stroke_model.pkl`, `rf_features.pkl`, etc.) and `representative_sample.csv` to the root directory.
-
-### prediction_sys.py - Prediction & Explanation System
-
-Generates predictions and explanations for a predefined patient:
-
-```bash
-# Ensure LM Studio is running first!
-python prediction_sys.py
-```
-
-**What it does:**
-- Loads trained model and artifacts
-- Loads representative sample
-- Makes predictions for a selected patient (configurable in script)
-- Generates SHAP explanations
-- Uses LLM to create clinical explanations
-- Displays results in console
-
-**Prerequisites:** 
-- Must run `trained_ml.py` first to generate model artifacts
-- LM Studio must be running
 
 ## Important Notes
 
