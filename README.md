@@ -57,24 +57,6 @@ pip list
 **Test imports:**
 ```bash
 python -c "import sklearn, pandas, numpy, shap, imblearn; print('All imports successful!')"
-``` (>=0.2.0)
-
-### 4. Verify Installation
-
-**Check Python version:**
-```bash
-python --version
-# Should show Python 3.8 or higher
-```
-
-**Verify packages installed:**
-```bash
-pip list
-```
-
-**Test imports:**
-```bash
-python -c "import sklearn, pandas, numpy, shap, imblearn; print('All imports successful!')"
 ```
 
 ### 5. Set Up LM Studio (for Instance Explanation)
