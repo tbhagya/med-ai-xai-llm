@@ -11,7 +11,7 @@ echo ""
 # Check if virtual environment exists
 if [ ! -d "venv" ]; then
     echo "ERROR: Virtual environment 'venv' not found!"
-    echo "Please create a virtual environment first and install dependencies."
+    echo "Please run setup.sh first to create the environment."
     read -p "Press Enter to exit..."
     exit 1
 fi
@@ -60,13 +60,12 @@ if [ $? -eq 0 ]; then
     echo "  models/rf_stroke_model.pkl (trained Random Forest model)"
     echo "  models/rf_features.pkl (feature names)"
     echo "  models/best_params.pkl (optimal hyperparameters)"
-    echo "  models/cv_results.csv, models/cv_summary.csv (cross-validation metrics)"
-    echo "  plots/feature_importance.png"
+    echo "  models/cv_results.csv (detailed cross-validation results)"
+    echo "  models/cv_summary.csv (cross-validation summary statistics)"
+    echo "  plots/feature_importance.png (feature importance visualization)"
     echo ""
-    echo "Next step: Run instanceexplainer.sh <patient_index> to explain predictions"
-    echo "Example: ./instanceexplainer.sh 12"
+    echo "Next step: Run ./instanceexplainer.sh to explain predictions"
     echo ""
-    read -p "Press Enter to exit..."
 else
     echo ""
     echo "ERROR: Model training failed!"

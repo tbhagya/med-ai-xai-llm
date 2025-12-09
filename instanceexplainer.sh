@@ -8,21 +8,10 @@ echo "Instance Explanation for Stroke Prediction"
 echo "========================================"
 echo ""
 
-# Check if patient index was provided
-if [ $# -eq 0 ]; then
-    echo "ERROR: Patient index not provided!"
-    echo ""
-    PATIENT_INDEX=""
-else
-    PATIENT_INDEX=$1
-    echo "Using patient index: $PATIENT_INDEX"
-    echo ""
-fi
-
 # Check if virtual environment exists
 if [ ! -d "venv" ]; then
     echo "ERROR: Virtual environment 'venv' not found!"
-    echo "Please create a virtual environment first and install dependencies."
+    echo "Please run setup.sh first to create the environment."
     read -p "Press Enter to exit..."
     exit 1
 fi
@@ -40,9 +29,16 @@ else
 fi
 
 # Check if required files exist
-if [ ! -f "models/rf_stroke_model.pkl" ] || [ ! -f "data/representative_sample.csv" ]; then
-    echo "ERROR: Required files not found!"
-    echo "Please run datapreprocessor.sh and modeltrainer.sh first."
+if [ ! -f "models/rf_stroke_model.pkl" ]; then
+    echo "ERROR: Trained model not found!"
+    echo "Please run modeltrainer.sh first."
+    read -p "Press Enter to exit..."
+    exit 1
+fi
+
+if [ ! -f "data/representative_sample_scaled.csv" ] || [ ! -f "data/representative_sample_display.csv" ]; then
+    echo "ERROR: Representative sample data not found!"
+    echo "Please run datapreprocessor.sh first."
     read -p "Press Enter to exit..."
     exit 1
 fi
@@ -55,38 +51,47 @@ if [ ! -f "instanceexplainer.py" ]; then
 fi
 
 # Check if LM Studio is running (optional warning)
-echo "Note: This script requires LM Studio to be running at http://localhost:1234"
-echo "Please ensure LM Studio is running before continuing."
+echo "IMPORTANT: This script requires LM Studio to be running at http://localhost:1234"
+echo "Please ensure LM Studio is running with a loaded model before continuing."
 echo ""
 
-# Run the explanation script
-if [ -z "$PATIENT_INDEX" ]; then
-    echo "Starting interactive patient selection..."
+# Main loop for multiple patient explanations
+while true; do
+    # Run the explanation script (interactive mode)
+    echo "Starting patient explanation system (interactive mode)..."
     echo ""
     python instanceexplainer.py
-else
-    echo "Generating explanation for patient $PATIENT_INDEX..."
-    echo ""
-    python instanceexplainer.py $PATIENT_INDEX
-fi
 
-# Check if script executed successfully
-if [ $? -eq 0 ]; then
-    echo ""
-    echo "========================================"
-    echo "Explanation generated successfully!"
-    echo "========================================"
-    echo ""
-    echo "You can run this script again with different patient indices (0-14)"
-    echo ""
-    read -p "Press Enter to exit..."
-else
-    echo ""
-    echo "ERROR: Explanation generation failed!"
-    echo "Please check:"
-    echo "  1. LM Studio is running at http://localhost:1234"
-    echo "  2. Patient index is valid (0-14)"
-    echo "  3. All required model files exist"
-    read -p "Press Enter to exit..."
-    exit 1
-fi
+    # Check if script executed successfully
+    if [ $? -eq 0 ]; then
+        echo ""
+        echo "========================================"
+        echo "Explanation generated successfully!"
+        echo "========================================"
+        echo ""
+        
+        # Ask if user wants to check another patient
+        read -p "Do you want to check another patient? (y/n): " -n 1 -r
+        echo ""
+        
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            echo "Exiting instance explainer. Thank you!"
+            echo ""
+            break
+        fi
+        
+        echo ""
+    else
+        echo ""
+        echo "ERROR: Explanation generation failed!"
+        echo ""
+        echo "Please check:"
+        echo "  1. LM Studio is running at http://localhost:1234"
+        echo "  2. A model is loaded in LM Studio (e.g., gemma-2b-it-GGUF)"
+        echo "  3. Patient index entered is valid (0-14)"
+        echo "  4. All required model files exist in models/ and data/ folders"
+        echo ""
+        read -p "Press Enter to exit..."
+        exit 1
+    fi
+done

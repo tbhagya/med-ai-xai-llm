@@ -11,11 +11,9 @@ echo ""
 # Check if virtual environment exists
 if [ ! -d "venv" ]; then
     echo "ERROR: Virtual environment 'venv' not found!"
-    echo "Please create a virtual environment first:"
-    echo "  python -m venv venv"
-    echo "  source venv/bin/activate  # On Linux/Mac/Git Bash"
-    echo "  .\\venv\\Scripts\\Activate.ps1  # On Windows PowerShell"
-    echo "  pip install -r requirements.txt"
+    echo "Please run setup.sh first to create the environment:"
+    echo "  chmod +x setup.sh"
+    echo "  ./setup.sh"
     read -p "Press Enter to exit..."
     exit 1
 fi
@@ -52,15 +50,15 @@ if [ $? -eq 0 ]; then
     echo "========================================"
     echo ""
     echo "Generated files:"
-    echo "  data/representative_sample.csv (15 patients)"
+    echo "  data/representative_sample_scaled.csv"
+    echo "  data/representative_sample_display.csv"
     echo "  data/X_smote.csv, data/y_smote.csv (SMOTE-balanced data)"
     echo "  data/zscore_scaler.pkl, data/ordinal_encoder.pkl, data/knn_imputer.pkl"
     echo "  data/feature_names.pkl"
     echo "  plots/*.png (EDA visualizations)"
     echo ""
-    echo "Next step: Run modeltrainer.sh to train the model"
+    echo "Next step: Run ./modeltrainer.sh to train the model"
     echo ""
-    read -p "Press Enter to exit..."
 else
     echo ""
     echo "ERROR: Data preprocessing failed!"
