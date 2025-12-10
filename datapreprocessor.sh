@@ -45,18 +45,6 @@ python datapreprocessor.py
 # Check if script executed successfully
 if [ $? -eq 0 ]; then
     echo ""
-    echo "========================================"
-    echo "Data preprocessing completed successfully!"
-    echo "========================================"
-    echo ""
-    echo "Generated files:"
-    echo "  data/representative_sample_scaled.csv"
-    echo "  data/representative_sample_display.csv"
-    echo "  data/X_smote.csv, data/y_smote.csv (SMOTE-balanced data)"
-    echo "  data/zscore_scaler.pkl, data/ordinal_encoder.pkl, data/knn_imputer.pkl"
-    echo "  data/feature_names.pkl"
-    echo "  plots/*.png (EDA visualizations)"
-    echo ""
     echo "Next step: Run ./modeltrainer.sh to train the model"
     echo ""
 else

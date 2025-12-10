@@ -52,18 +52,6 @@ python modeltrainer.py
 # Check if script executed successfully
 if [ $? -eq 0 ]; then
     echo ""
-    echo "========================================"
-    echo "Model training completed successfully!"
-    echo "========================================"
-    echo ""
-    echo "Generated files:"
-    echo "  models/rf_stroke_model.pkl (trained Random Forest model)"
-    echo "  models/rf_features.pkl (feature names)"
-    echo "  models/best_params.pkl (optimal hyperparameters)"
-    echo "  models/cv_results.csv (detailed cross-validation results)"
-    echo "  models/cv_summary.csv (cross-validation summary statistics)"
-    echo "  plots/feature_importance.png (feature importance visualization)"
-    echo ""
     echo "Next step: Run ./instanceexplainer.sh to explain predictions"
     echo ""
 else
