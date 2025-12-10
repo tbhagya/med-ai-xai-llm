@@ -10,7 +10,7 @@
 
 ### 1. Clone or Download the Project
 ```bash
-cd /path/to/med-xai-llm
+cd /path/to/med-ai-xai-llm
 ```
 
 ### 2. Set Up LM Studio
