@@ -1,5 +1,3 @@
-# AI-XAI-LLM
-
 ## Requirements
 
 - Python 3.8+
