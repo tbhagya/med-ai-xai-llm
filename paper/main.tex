@@ -1,0 +1,112 @@
+\documentclass[conference]{IEEEtran}
+
+\IEEEoverridecommandlockouts
+
+\newcommand{\squeezeup}{\vspace{-2.5mm}}
+\usepackage{array}
+\newcolumntype{C}[1]{>{\centering\arraybackslash}m{#1}}
+\usepackage{makecell}
+\usepackage{cite}
+\usepackage{hyperref}
+\hypersetup{
+	colorlinks=false,
+	pdfborder={0 0 0},
+}
+\usepackage[pdftex]{graphicx}
+\usepackage{url}
+\usepackage{soul}
+% correct bad hyphenation
+\hyphenation{op-tical net-works semi-conduc-tor}
+
+%table
+\usepackage{tabularx}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\usepackage{multirow}
+
+%graph
+\usepackage{siunitx}
+\usepackage{tikz} % To generate the plot from csv
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.12}
+\pgfplotsset{compat=newest} % Allows to place the legend below plot
+\usepgfplotslibrary{units}
+
+\usepackage{listings}
+\usepackage{fancyvrb}
+\usepackage{framed}
+\usepackage[listings,skins]{tcolorbox}
+\usepackage[skipbelow=\topskip,skipabove=\topskip]{mdframed}
+\mdfsetup{roundcorner=0}
+
+\usepackage[colorinlistoftodos]{todonotes}
+
+\lstset{
+	basicstyle=\footnotesize\tt,        % the size of the fonts that are used for the code
+	breakatwhitespace=false,         % sets if automatic breaks should only happen at whitespace
+	breaklines=true,                 % sets automatic line breaking
+	captionpos=b,                    % sets the caption-position to bottom
+	extendedchars=true,              % lets you use non-ASCII characters; for 8-bits encodings only, does not work with UTF-8
+	frame=single,                    % adds a frame around the code
+	language=Java,                 % the language of the code
+	keywordstyle=\bf,
+	showspaces=false,                % show spaces everywhere adding particular underscores; it overrides 'showstringspaces'
+	showstringspaces=false,          % underline spaces within strings only
+	showtabs=false,                  % show tabs within strings adding particular underscores
+	tabsize=2                       % sets default tabsize to 2 spaces
+}
+
+\usepackage{textcomp}
+
+\renewcommand\IEEEkeywordsname{Keywords}
+
+% table caption
+\usepackage{xpatch}
+\makeatletter
+\patchcmd\@makecaption{\\}{.~}{}{\fail}
+\makeatletter
+\raggedbottom
+\begin{document}
+
+\title{AI-XAI-LLM: Interpretable Insights \\into Stroke Risk Prediction}
+
+\author{
+\IEEEauthorblockN{Thilini Bhagya}
+\IEEEauthorblockA{
+\textit{Lincoln University}\\
+Lincoln, New Zealand\\
+thilini.bhagya@lincoln.ac.nz
+}
+\and
+\IEEEauthorblockN{Vindya Senanayake, Tharindu Thilakarathna,\\ Sanjaya Samudra, Gilmini Geethika}
+\IEEEauthorblockA{
+\textit{University of Sri Jayewardenepura}\\
+Nugegoda, Sri Lanka\\
+\{vindya, fc115538, fc115634, gilmini\}@sjp.ac.lk
+}
+}
+
+\IEEEoverridecommandlockouts
+\IEEEpubid{\makebox[\columnwidth]{979-8-3315-5723-2/26/\$31.00 \copyright2026 IEEE \hfill} \hspace{\columnsep}\makebox[\columnwidth]{ }}
+\maketitle
+
+\begin{abstract}
+Early identification of individuals at stroke risk is critical for implementing timely preventive measures. Although machine learning models have demonstrated potential in predicting stroke risk, their clinical adoption is limited due to a lack of transparency. Explainable AI (XAI) techniques provide insights into predictions, but their technical metrics are often complex and difficult for clinicians to interpret. This research proposes an integrated AI-XAI-LLM pipeline that generates accurate, patient-specific stroke predictions and provides post-hoc explainability to highlight key factors influencing the prediction, which are then translated into clear, clinician-friendly narratives using a prompt-engineered large language model. Evaluations show that this approach enhances prediction transparency and interpretability, fostering trust and encouraging the use of predictions to support decision-making.
+\end{abstract}
+
+\medskip
+
+\begin{IEEEkeywords}
+\textit{explainability, LLM, SHAP, stroke prediction, XAI}
+\end{IEEEkeywords}
+
+\input{body.tex} 
+
+% references
+\begingroup
+\bibliographystyle{IEEEtran}
+\def\IEEEbibitemsep{0pt plus .5pt}
+\bibliography{bibliography}
+\endgroup
+	
+
+\end{document}
